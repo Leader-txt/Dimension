@@ -39,7 +39,7 @@ namespace Dimensions.Core
         {
             while (packets.TryTake(out _)) ;
         }
-        
+
         public Packet Receive()
         {
             var b = packets.Take();
@@ -51,13 +51,15 @@ namespace Dimensions.Core
             //Console.WriteLine($"Send=>{client.Client.RemoteEndPoint}: {data}");
             lock (bw) bw.Write(serializer.Serialize(data));
         }
-        
+
         private void ListenThread()
         {
             try
             {
-                for (;;)
+                for (; ; )
                 {
+                    if (client.Available<2)
+                        continue;
                     var packet = serializer.Deserialize(br);
                     packets.Add(packet);
                 }

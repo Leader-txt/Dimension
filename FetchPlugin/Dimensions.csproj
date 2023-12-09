@@ -9,28 +9,19 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup> -->
   <PropertyGroup />
-  <ItemGroup />
   <ItemGroup>
-    <Reference Include="TShockAPI">
-      <HintPath>TShockAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="OTAPI">
-      <HintPath>OTAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="TerrariaServer">
-      <HintPath>TerrariaServer.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="StatusTxtMgr">
-      <HintPath>StatusTxtMgr.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="TShock" Version="5.2.0" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="LazyUtils">
-      <HintPath>LazyUtils.dll</HintPath>
+      <HintPath>..\Reference\LazyUtils.dll</HintPath>
     </Reference>
     <Reference Include="PChrome.Core">
-      <HintPath>PChrome.Core.dll</HintPath>
+      <HintPath>..\Reference\PChrome.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="StatusTxtMgr">
+      <HintPath>..\Reference\StatusTxtMgr.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

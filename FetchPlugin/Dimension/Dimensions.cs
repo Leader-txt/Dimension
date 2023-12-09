@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Chireiden.TShock.Omni;
+using Google.Protobuf.WellKnownTypes;
 using LazyUtils;
 using MaxMind;
 using Newtonsoft.Json;
@@ -168,8 +169,8 @@ public class Dimensions : TerrariaPlugin
 		{
 			Geo = new GeoIPCountry(text);
 		}
-		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(server), new string[1] { "server" }));
-		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(listPlayers), new string[1] { "list" }));
+		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(server), "server","turn"));
+		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(listPlayers), new string[] { "list" }));
 		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(advtp), new string[1] { "advtp" }));
 		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(advwarp), new string[1] { "advwarp" }));
 		Hooks.MessageBuffer.GetData += PingClass.Hook_Ping_GetData;
@@ -307,15 +308,42 @@ public class Dimensions : TerrariaPlugin
 		try
 		{
 			byte[] array = new byte[5242880];
-			Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			socket.Connect(new IPEndPoint(IPAddress.Parse(Config.HostIP), Config.HostRestPort));
-			int count = socket.Receive(array);
-			socket.Close();
-			JObject val = (JObject)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(array, 0, count));
-			args.Player.SendInfoMessage("当前在线：" + (object)val["players"]);
+			var request = new MemoryStream();
+			using(var bw = new BinaryWriter(request))
+			{
+				bw.Write((short)0);
+                bw.Write((byte)67);
+				bw.Write((short)4);
+				bw.Write("request");
+				bw.Write((ushort)0);
+				bw.BaseStream.Position = 0;
+                bw.Write((short)request.Length);
+            }
+			var socket = Netplay.Clients[args.Player.Index].Socket;
+            object obj = _003C_003Ec._003C_003E9__25_0;
+            if (obj == null)
+            {
+                SocketSendCallback val = delegate
+                {
+                };
+                _003C_003Ec._003C_003E9__25_0 = val;
+                obj = (object)val;
+            }
+            socket.AsyncSend(request.ToArray(), 0, request.ToArray().Length, (SocketSendCallback)obj, (object)null);
+			socket.AsyncReceive(array, 0, array.Length, (o, a) =>
+			{
+				using (var br = new BinaryReader(new MemoryStream(array)))
+				{
+					br.ReadInt16();
+					br.ReadByte();
+					br.ReadInt16();
+					args.Player.SendInfoMessage("当前在线：" + br.ReadString());
+				}
+			});
 		}
-		catch
+		catch(Exception ex)
 		{
+			Console.WriteLine(ex.ToString());
 		}
 	}
 
@@ -399,7 +427,6 @@ public class Dimensions : TerrariaPlugin
 		{
 			return;
 		}
-		Console.WriteLine("Got 67");
 		using MemoryStream input = new MemoryStream(args.Msg.readBuffer, args.Index, args.Length);
 		using BinaryReader binaryReader = new BinaryReader(input);
 		if (binaryReader.ReadInt16() == 1)

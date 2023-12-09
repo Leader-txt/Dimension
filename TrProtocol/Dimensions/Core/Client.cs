@@ -14,13 +14,13 @@ namespace Dimensions.Core;
 public class Client
 {
     private readonly PacketClient _client;
-    
+
     private readonly ClientHello clientHello;
     private readonly DimensionUpdate clientAddress;
     private Tunnel c2s, s2c;
     private PacketClient _serverConnection;
     private Server currentServer;
-    private readonly List<ClientHandler> handlers = new ();
+    private readonly List<ClientHandler> handlers = new();
     public PacketClient PacketClient => _client;
 
     public string Name { get; set; }
@@ -40,7 +40,7 @@ public class Client
             Text = NetworkText.FromLiteral(literal)
         });
     }
-    
+
     public void SendServer(Packet packet)
     {
         //Console.WriteLine($"Send To Server: {packet}");
@@ -49,12 +49,12 @@ public class Client
 
     public Exception Disconnect(string reason)
     {
-        SendClient(new Kick { Reason = NetworkText.FromLiteral(reason)});
+        SendClient(new Kick { Reason = NetworkText.FromLiteral(reason) });
         //Console.WriteLine($"Disconnected from {_client.client.Client?.RemoteEndPoint}: {reason}");
         _client.client.Close();
         return new(reason);
     }
-    
+
     public Client(TcpClient client)
     {
         _client = new PacketClient(client, true);
@@ -69,7 +69,7 @@ public class Client
 
         if (packet is not ClientHello hello)
             throw new Exception("ClientHello expected!");
-        
+
         clientHello = hello;
 
         var ip = client.Client.RemoteEndPoint as IPEndPoint;
@@ -108,11 +108,11 @@ public class Client
         // prepare the to-server channel to load player state
         _serverConnection.Send(clientHello);
         _serverConnection.Send(clientAddress);
-        
+
         s2c = new Tunnel(_serverConnection, _client, "[S2C]");
         s2c.OnReceive += OnS2CPacket;
         s2c.OnError += OnError;
-        
+
         c2s = new Tunnel(_client, _serverConnection, "[C2S]");
         c2s.OnReceive += OnC2SPacket;
         c2s.OnError += OnError;
@@ -150,7 +150,7 @@ public class Client
         OnCommonPacket(args);
     }
 
-    
+
     // clean existing entities
     private void Cleaning()
     {
@@ -167,13 +167,13 @@ public class Client
             SendChatMessage("Server not found");
             return;
         }
-        
+
         if (target == currentServer)
         {
             SendChatMessage("Already connected to this server");
             return;
         }
-        
+
         c2s!.OnClose += () =>
         {
             try
@@ -188,12 +188,12 @@ public class Client
         };
 
         s2c!.Close();
-        c2s.Close();
+        c2s!.Close();
 
-        _client.Cancel();
+        /*_client.Cancel();
         _serverConnection!.Cancel();
-
-        _serverConnection.client.Close();
+            _serverConnection.client.Close();
+*/
 
     }
 
@@ -201,7 +201,7 @@ public class Client
     {
         handlers.Add(new T().SetParent(this));
     }
-    
+
     private void RegisterHandlers()
     {
         RegisterHandler<ConnectionHandler>();

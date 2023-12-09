@@ -13,16 +13,6 @@ namespace Dimensions.Core
         public override void OnC2SPacket(PacketReceiveArgs args)
         {
             if (args.Packet is not NetTextModuleC2S text) return;
-
-            if (text.Text.StartsWith("/server"))
-            {
-                //var target = Program.config.GetServer(text.Text[7..].Trim());
-
-                //Parent.ChangeServer(target);
-
-                // handled raw player command
-                args.Handled = true;
-            }
             
             if (text.Text.StartsWith("/spam"))
             {
