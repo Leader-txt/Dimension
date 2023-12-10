@@ -102,6 +102,7 @@ public class Client
         currentServer = server;
         var serverConnection = new TcpClient();
         serverConnection.Connect(server.serverIP!, server.serverPort);
+        var old = _serverConnection?.client;
         _serverConnection = new PacketClient(serverConnection, false);
 
         _serverConnection.OnError += OnError;
@@ -122,6 +123,7 @@ public class Client
 
         s2c.Start();
         c2s.Start();
+        old?.Close();
     }
 
     private void OnCommonPacket(PacketReceiveArgs args)
@@ -193,10 +195,9 @@ public class Client
         s2c!.Close();
         c2s!.Close();
 
-        /*_client.Cancel();
+        _client.Cancel();
         _serverConnection!.Cancel();
-            _serverConnection.client.Close();
-*/
+        //_serverConnection.client.Close();
 
     }
 

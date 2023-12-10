@@ -7,7 +7,7 @@ namespace Dimensions.Core
     public class PacketClient
     {
         private readonly BlockingCollection<Packet> packets = new();
-        public event Action<Exception> OnError = Console.WriteLine;
+        public event Action<Exception> OnError = Logger.Log;
         private readonly BinaryReader br;
         private readonly BinaryWriter bw;
 
@@ -58,8 +58,6 @@ namespace Dimensions.Core
             {
                 for (; ; )
                 {
-                    if (client.Available<2)
-                        continue;
                     var packet = serializer.Deserialize(br);
                     packets.Add(packet);
                 }
