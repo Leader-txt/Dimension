@@ -27,7 +27,7 @@ public class Client
 
     public void SendClient(Packet packet)
     {
-        Console.WriteLine($"Send To Client: {packet}");
+        Logger.Log($"Send To Client: {packet}");
         _client.Send(packet);
     }
 
@@ -86,7 +86,10 @@ public class Client
 
     private void OnError(Exception e)
     {
-        Console.WriteLine($"critical connection error occurred: {e}");
+        if (e.InnerException is SocketException)
+            Logger.Log($"{_client.client.Client.RemoteEndPoint} disconnected");
+        else
+            Logger.Log($"critical connection error occurred: {e}");
         s2c?.Close();
         c2s?.Close();
         _serverConnection?.client.Close();

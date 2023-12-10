@@ -6,13 +6,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Dimensions.Core;
+using TrProtocol;
 
 namespace Dimensions
 {
     public class Listener
     {
         private readonly TcpListener listener;
-        public event Action<Exception> OnError = Console.WriteLine;
+        public event Action<Exception> OnError = Logger.Log;//Console.WriteLine;
         
         public Listener(IPEndPoint ep)
         {
@@ -39,12 +40,12 @@ namespace Dimensions
                 try
                 {
                     var client = listener.AcceptTcpClient();
-                    Console.WriteLine($"Accepted connection from {client.Client.RemoteEndPoint}");
+                    Logger.Log($"Accepted connection from {client.Client.RemoteEndPoint}");
                     Task.Run(() => OnAcceptClient(client));
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error accepting connection: {e}");
+                    Logger.Log($"Error accepting connection: {e}");
                 }
             }
         }
