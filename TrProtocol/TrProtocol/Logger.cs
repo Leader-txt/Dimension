@@ -17,7 +17,11 @@ namespace TrProtocol
             content = DateTime.Now.ToString("[yyyy/dd/mm hh:mm:ss]") + content;
             if (print)
                 Console.WriteLine(content);
-            File.AppendAllLines(logFilePath, new string[] { content });
+            try
+            {
+                File.AppendAllLines(logFilePath, new string[] { content });
+            }
+            catch { }
         }
     }
 }

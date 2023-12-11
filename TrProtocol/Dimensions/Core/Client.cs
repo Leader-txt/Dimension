@@ -19,7 +19,7 @@ public class Client
     private readonly DimensionUpdate clientAddress;
     private Tunnel c2s, s2c;
     private PacketClient _serverConnection;
-    private Server currentServer;
+    private Server currentServer = null;
     private readonly List<ClientHandler> handlers = new();
     public PacketClient PacketClient => _client;
 
@@ -86,23 +86,20 @@ public class Client
 
     private void OnError(Exception e)
     {
-        if (e.InnerException is SocketException)
-            Logger.Log($"{_client.client.Client.RemoteEndPoint} disconnected");
-        else
-            Logger.Log($"critical connection error occurred: {e}");
+        Logger.Log($"critical connection error occurred: {e}");
         s2c?.Close();
         c2s?.Close();
         _serverConnection?.client.Close();
         _client?.client.Close();
     }
 
-    public void TunnelTo(Server server)
+    public void TunnelTo(Server server,TcpClient connection=null)
     {
         _client.Clear();
         currentServer = server;
-        var serverConnection = new TcpClient();
-        serverConnection.Connect(server.serverIP!, server.serverPort);
-        var old = _serverConnection?.client;
+        var serverConnection =connection ?? new TcpClient();
+        if(connection==null)
+            serverConnection.Connect(server.serverIP!, server.serverPort);
         _serverConnection = new PacketClient(serverConnection, false);
 
         _serverConnection.OnError += OnError;
@@ -112,6 +109,10 @@ public class Client
         // prepare the to-server channel to load player state
         _serverConnection.Send(clientHello);
         _serverConnection.Send(clientAddress);
+        if(connection == null)
+        {
+            SendChatMessage(File.ReadAllText(Program.MotdPath));
+        }
 
         s2c = new Tunnel(_serverConnection, _client, "[S2C]");
         s2c.OnReceive += OnS2CPacket;
@@ -123,7 +124,6 @@ public class Client
 
         s2c.Start();
         c2s.Start();
-        old?.Close();
     }
 
     private void OnCommonPacket(PacketReceiveArgs args)
@@ -179,6 +179,16 @@ public class Client
             return;
         }
 
+        var serverConnection = new TcpClient();
+        try
+        {
+            serverConnection.Connect(target.serverIP, target.serverPort);
+        }
+        catch(Exception ex)
+        {
+            SendChatMessage("被一股神秘力量阻止穿越");
+            return;
+        }
         c2s!.OnClose += () =>
         {
             try
@@ -187,18 +197,17 @@ public class Client
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Logger.Log(e);
             }
-            TunnelTo(target);
+            TunnelTo(target,serverConnection);
         };
-
         s2c!.Close();
         c2s!.Close();
 
         _client.Cancel();
         _serverConnection!.Cancel();
-        //_serverConnection.client.Close();
-
+        _serverConnection.OnError -= OnError;
+        _serverConnection.client.Close();
     }
 
     public void RegisterHandler<T>() where T : ClientHandler, new()

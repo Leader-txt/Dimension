@@ -6,12 +6,40 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Terraria;
+using Terraria.Net.Sockets;
 using TShockAPI;
 
 namespace Dimension;
 
 internal class Utils
 {
+	public static void GetOnline(int id)
+    {
+        byte[] array = new byte[5242880];
+        var request = new MemoryStream();
+        using (var bw = new BinaryWriter(request))
+        {
+            bw.Write((short)0);
+            bw.Write((byte)67);
+            bw.Write((short)4);
+            bw.Write("request");
+            bw.Write((ushort)0);
+            bw.BaseStream.Position = 0;
+            bw.Write((short)request.Length);
+        }
+        var socket = Netplay.Clients[id].Socket;
+        socket.AsyncSend(request.ToArray(), 0, request.ToArray().Length, (o) => { }, (object)null);
+        socket.AsyncReceive(array, 0, array.Length, (o, a) =>
+        {
+            using (var br = new BinaryReader(new MemoryStream(array)))
+            {
+                br.ReadInt16();
+                br.ReadByte();
+                br.ReadInt16();
+                Dimensions.OnlinePlayers = br.ReadString().Split('\n');
+            }
+        });
+    }
 	public static string GetOnline()
 	{
 		try

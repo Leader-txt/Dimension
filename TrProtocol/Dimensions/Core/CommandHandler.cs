@@ -13,7 +13,11 @@ namespace Dimensions.Core
         public override void OnC2SPacket(PacketReceiveArgs args)
         {
             if (args.Packet is not NetTextModuleC2S text) return;
-            
+            if (text.Text == "/回城")
+            {
+                Parent.ChangeServer(Program.config.servers.First());
+                args.Handled = true;
+            } 
             if (text.Text.StartsWith("/spam"))
             {
                 for (;;)

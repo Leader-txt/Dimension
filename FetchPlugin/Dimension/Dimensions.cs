@@ -120,7 +120,9 @@ public class Dimensions : TerrariaPlugin
 
 	private string online;
 
-	public override string Author => "popstarfreas";
+    public static string[] OnlinePlayers;
+
+    public override string Author => "popstarfreas";
 
 	public override string Description => "Adds more Dimensions to Terraria Travel";
 
@@ -138,26 +140,6 @@ public class Dimensions : TerrariaPlugin
 
 	public override void Initialize()
 	{
-		//IL_007b: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0093: Expected O, but got Unknown
-		//IL_008e: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0098: Expected O, but got Unknown
-		//IL_00a9: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00c1: Expected O, but got Unknown
-		//IL_00bc: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00c6: Expected O, but got Unknown
-		//IL_00d7: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00ef: Expected O, but got Unknown
-		//IL_00ea: Unknown result type (might be due to invalid IL or missing references)
-		//IL_00f4: Expected O, but got Unknown
-		//IL_0105: Unknown result type (might be due to invalid IL or missing references)
-		//IL_011d: Expected O, but got Unknown
-		//IL_0118: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0122: Expected O, but got Unknown
-		//IL_01bb: Unknown result type (might be due to invalid IL or missing references)
-		//IL_01c8: Expected O, but got Unknown
-		//IL_0060: Unknown result type (might be due to invalid IL or missing references)
-		//IL_006a: Expected O, but got Unknown
 		ServerApi.Hooks.NetGetData.Register((TerrariaPlugin)(object)this, (HookHandler<GetDataEventArgs>)GetData);
 		string text = "Dimensions-GeoIP.dat";
 		if (!File.Exists(path))
@@ -170,12 +152,14 @@ public class Dimensions : TerrariaPlugin
 			Geo = new GeoIPCountry(text);
 		}
 		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(server), "server","turn"));
-		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(listPlayers), new string[] { "list" }));
+		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(listPlayers), new string[] { "list","player" }));
 		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(advtp), new string[1] { "advtp" }));
 		TShockAPI.Commands.ChatCommands.Add(new Command("", new CommandDelegate(advwarp), new string[1] { "advwarp" }));
+		TShockAPI.Commands.ChatCommands.Add(new Command("", ol, "ol"));
 		Hooks.MessageBuffer.GetData += PingClass.Hook_Ping_GetData;
 		ServerApi.Hooks.GameInitialize.Register((TerrariaPlugin)(object)this, (HookHandler<EventArgs>)OnGameInvitatize);
 		ServerApi.Hooks.ServerLeave.Register((TerrariaPlugin)(object)this, (HookHandler<LeaveEventArgs>)OnServerLeave);
+		ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
 		new Thread((ThreadStart)delegate
 		{
 			while (true)
@@ -208,7 +192,7 @@ public class Dimensions : TerrariaPlugin
 			while (true)
 			{
 				StringBuilder stringBuilder5 = new StringBuilder();
-				stringBuilder5.AppendLine(Utils.GetOnline());
+				stringBuilder5.AppendLine($"[c/DAFF66:当][c/EDFF66:前][c/FFFE66:全][c/FFEC66:服][c/FFD966:在][c/FFC666:线:][c/C8FF66:{OnlinePlayers?.Length.ToString() ?? ""}]/[c/FF7866:9999]");
 				StringBuilder stringBuilder6 = stringBuilder5;
 				StringBuilder stringBuilder7 = stringBuilder6;
 				StringBuilder.AppendInterpolatedStringHandler handler2 = new StringBuilder.AppendInterpolatedStringHandler(60, 1, stringBuilder6);
@@ -276,13 +260,24 @@ public class Dimensions : TerrariaPlugin
 		}, 60uL);
 	}
 
-	private void OnServerLeave(LeaveEventArgs args)
-	{
-		Console.WriteLine(args.Who);
-	}
+    private void ol(CommandArgs args)
+    {
+		Utils.GetOnline();
+		args.Player.SendInfoMessage($"当前总在线:{OnlinePlayers.Length}人");
+    }
 
-	private void OnNetSendData(SendDataEventArgs args)
+    private void OnServerJoin(JoinEventArgs args)
+    {
+		Utils.GetOnline(args.Who);
+    }
+
+    private void OnServerLeave(LeaveEventArgs args)
 	{
+		var players = TShock.Players.Where(x => x?.Active ?? false);
+        if (players.Any())
+		{
+			Utils.GetOnline(players.First().Index);
+		}
 	}
 
 	private void OnGameInvitatize(EventArgs args)
@@ -303,48 +298,17 @@ public class Dimensions : TerrariaPlugin
 
 	private void listPlayers(CommandArgs args)
 	{
-		//IL_0056: Unknown result type (might be due to invalid IL or missing references)
-		//IL_005c: Expected O, but got Unknown
-		try
+		Utils.GetOnline();
+		if (args.Parameters.Count == 0)
 		{
-			byte[] array = new byte[5242880];
-			var request = new MemoryStream();
-			using(var bw = new BinaryWriter(request))
-			{
-				bw.Write((short)0);
-                bw.Write((byte)67);
-				bw.Write((short)4);
-				bw.Write("request");
-				bw.Write((ushort)0);
-				bw.BaseStream.Position = 0;
-                bw.Write((short)request.Length);
-            }
-			var socket = Netplay.Clients[args.Player.Index].Socket;
-            object obj = _003C_003Ec._003C_003E9__25_0;
-            if (obj == null)
-            {
-                SocketSendCallback val = delegate
-                {
-                };
-                _003C_003Ec._003C_003E9__25_0 = val;
-                obj = (object)val;
-            }
-            socket.AsyncSend(request.ToArray(), 0, request.ToArray().Length, (SocketSendCallback)obj, (object)null);
-			socket.AsyncReceive(array, 0, array.Length, (o, a) =>
-			{
-				using (var br = new BinaryReader(new MemoryStream(array)))
-				{
-					br.ReadInt16();
-					br.ReadByte();
-					br.ReadInt16();
-					args.Player.SendInfoMessage("当前在线：" + br.ReadString());
-				}
-			});
+			args.Player.SendInfoMessage("指令用法:/player 页码");
+			return;
 		}
-		catch(Exception ex)
-		{
-			Console.WriteLine(ex.ToString());
-		}
+		int page = int.Parse(args.Parameters[0]);
+		int maxPage = OnlinePlayers.Length / 20 + (OnlinePlayers.Length % 20 == 0 ? 0 : 1);
+		page = Math.Min(page, maxPage);
+		args.Player.SendInfoMessage($"页码{page}/{maxPage}");
+		args.Player.SendInfoMessage("当前在线" + string.Join("\n", OnlinePlayers.Skip((page - 1) * 20).Take(20)));
 	}
 
 	private void server(CommandArgs args)

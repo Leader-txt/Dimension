@@ -34,7 +34,6 @@ namespace Dimensions.Core
                     break;
                 case SubMessageID.ChangeSever:
                     var server = Program.config.GetServer(update.Content);
-
                     Parent.ChangeServer(server);
                     break;
                 case SubMessageID.ChangeCustomizedServer:
